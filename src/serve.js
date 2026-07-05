@@ -11,8 +11,8 @@ function inject(html, data) {
   return html.replace('/*__DATA__*/null', json)
 }
 
-export async function serve(data, { port = 4177, open = true } = {}) {
-  const html = inject(await readFile(join(APP_DIR, 'dashboard.html'), 'utf8'), data)
+export async function serve(data, { port = 4177, open = true, page = 'dashboard.html' } = {}) {
+  const html = inject(await readFile(join(APP_DIR, page), 'utf8'), data)
 
   const server = createServer((req, res) => {
     if (req.url === '/data.json') {
