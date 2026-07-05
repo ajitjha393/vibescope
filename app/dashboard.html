@@ -229,19 +229,28 @@ window.__VIBE__ = /*__DATA__*/null;
   }
 
   // ---------- layout ----------
+  let AGENT_LABEL = new Map();
+  const agentName = (aid) => AGENT_LABEL.get(aid) || aid;
+
   function render() {
     app.textContent = '';
     const blue = css('--blue'), aqua = css('--aqua');
+    AGENT_LABEL = new Map((D.agents || []).map((a) => [a.id, a.label]));
 
     // header
     const top = el('header', { class: 'top' }, app);
     el('div', { class: 'logo', html: '<span class="dot">◉</span> vibescope <small>local-first dev observability</small>' }, top);
     const first = D.daily.find((d) => d.prompts + d.commits > 0);
     const span = first ? `${niceDate(first.date)} – ${niceDate(D.daily[D.daily.length - 1].date)}` : `last ${D.rangeDays} days`;
-    el('div', { class: 'meta', text: `${span} · ${(D.identity && D.identity[0]) || 'you'}` }, top);
+    const parsed = (D.agents || []).filter((a) => a.found).map((a) => a.label).join(' + ');
+    el('div', { class: 'meta', text: `${parsed ? parsed + ' · ' : ''}${span} · ${(D.identity && D.identity[0]) || 'you'}` }, top);
 
-    if (D.sources && D.sources.cursor) {
-      el('div', { class: 'banner', text: 'Cursor detected on this machine — Cursor session parsing lands in v0.2. Showing Claude Code + git for now.' }, app);
+    const unparsed = (D.agents || []).filter((a) => a.detected && !a.found);
+    if (unparsed.length) {
+      el('div', {
+        class: 'banner',
+        text: unparsed.map((a) => `${a.label} detected but not parsed${a.error ? ` (${a.error})` : ''}`).join(' · '),
+      }, app);
     }
 
     // hero + tiles
@@ -468,12 +477,17 @@ window.__VIBE__ = /*__DATA__*/null;
       const d = byDate.get(iso);
       const v = d ? d[key] : 0;
       const r = el('rect', { x, y, width: cell, height: cell, rx: 3, fill: color(v), tabindex: -1 }, svg);
-      hover(r, (e) => showTip(e, date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }), [
-        { value: String(d ? d.prompts : 0), label: 'prompts', color: css('--blue') },
-        { value: String(d ? d.commits : 0), label: 'commits', color: css('--aqua') },
-        { value: String(d ? d.aiMsgs : 0), label: 'AI turns' },
-        { value: money(d ? d.cost : 0), label: 'est. cost' },
-      ]));
+      hover(r, (e) => {
+        const rows = [
+          { value: String(d ? d.prompts : 0), label: 'prompts', color: css('--blue') },
+          { value: String(d ? d.commits : 0), label: 'commits', color: css('--aqua') },
+          { value: String(d ? d.aiMsgs : 0), label: 'AI turns' },
+          { value: money(d ? d.cost : 0), label: 'est. cost' },
+        ];
+        const by = d && d.byAgent ? Object.entries(d.byAgent) : [];
+        if (by.length > 1) for (const [aid, n] of by) rows.push({ value: String(n), label: `via ${agentName(aid)}` });
+        showTip(e, date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }), rows);
+      });
     }
 
     const lg = el('div', { class: 'legend', style: `margin: 2px 0 2px ${left}px` }, parent);
