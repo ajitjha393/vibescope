@@ -89,6 +89,7 @@ export async function scanClaude({ claudeDir = join(homedir(), '.claude', 'proje
         cost: 0,
       }
       const seenRequests = new Set()
+      const seenToolIds = new Set()
 
       const rl = createInterface({ input: createReadStream(join(dir, file)), crlfDelay: Infinity })
       for await (const line of rl) {
@@ -117,8 +118,16 @@ export async function scanClaude({ claudeDir = join(homedir(), '.claude', 'proje
           const dupe = key && seenRequests.has(key)
           if (key) seenRequests.add(key)
 
-          if (Array.isArray(msg.content) && !dupe) {
-            session.toolCalls += msg.content.filter((b) => b && b.type === 'tool_use').length
+          // Streamed responses land as several lines sharing one requestId, each
+          // carrying a slice of content — so tool_use blocks are deduped by their
+          // own id across ALL lines, not gated on the first line per request.
+          if (Array.isArray(msg.content)) {
+            for (const b of msg.content) {
+              if (b && b.type === 'tool_use' && b.id && !seenToolIds.has(b.id)) {
+                seenToolIds.add(b.id)
+                session.toolCalls += 1
+              }
+            }
           }
 
           if (msg.usage && !dupe) {
