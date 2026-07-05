@@ -332,6 +332,18 @@ window.__VIBE__ = /*__DATA__*/null;
         ]));
     }
 
+    // ---- tools ----
+    {
+      const { chart, table } = card(grid, 'What the agents did', 'tool invocations');
+      const items = (D.tools || []).slice(0, 8);
+      const total = (D.tools || []).reduce((a, t) => a + t.count, 0);
+      hbars(chart, items.map((t) => ({ label: t.name, value: t.count, extra: t })), blue, (t) => [
+        { value: fmt(t.count), label: 'invocations', color: blue },
+        { value: total ? Math.round((100 * t.count) / total) + '%' : '–', label: 'of all tool calls' },
+      ]);
+      dataTable(table, ['Tool', 'Invocations'], (D.tools || []).map((t) => [t.name, t.count]));
+    }
+
     // ---- rhythm ----
     {
       const { chart, table } = card(grid, 'When you vibe', 'prompts by hour and weekday');
