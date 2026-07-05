@@ -70,10 +70,27 @@ share a `requestId`), cache reads bill at 0.1× input rate, cache writes at
 1.25×/2× (5m/1h TTL), priced from each message's own model id. Subscription
 users: read cost as "API-equivalent value", not a bill.
 
+## Team mode
+
+Your whole team's picture — adoption, spend, rhythm — without a server and
+without anyone's data leaving their machine unwillingly:
+
+```sh
+# each member, locally (--redact strips session titles):
+npx vibescope --json --name alice --redact > alice.json
+
+# anyone, with the collected files:
+npx vibescope team ./snapshots/
+```
+
+The team dashboard shows combined spend/prompts/pair-time, per-member bars,
+**agent adoption** (who uses Claude Code vs Cursor vs …), a team rhythm heatmap
+with per-member tooltips, and a full member table. Sharing a snapshot is an
+explicit, inspectable act — it's a JSON file you can read before sending.
+
 ## Roadmap
 
-- **v0.3** — Team mode: merge exported `--json` snapshots into a team dashboard (opt-in, still self-hosted)
-- **v0.4** — `--compare` period dashboards · more providers (Windsurf, opencode)
+- **v0.4** — `--compare` period dashboards · more providers (Windsurf, opencode) · team trends over time
 - **Ideas welcome** — open an issue
 
 ## Development
