@@ -77,8 +77,8 @@ const cc = agents.find((a) => a.id === 'claude-code')
 const cur = agents.find((a) => a.id === 'cursor')
 
 const identity = authors.length ? authors : await defaultIdentity()
-log(`scanning git repos (author: ${identity.join(', ') || 'anyone'})…`)
-const gitData = await scanGit({ roots, authors: identity, sinceMs })
+log(`scanning git repos (author: ${identity.join(', ') || 'anyone'}${authors.length ? '' : ' + per-repo identities'})…`)
+const gitData = await scanGit({ roots, authors: identity, explicitAuthors: authors.length > 0, sinceMs })
 log(`  ${gitData.totalCommits} commits across ${gitData.repos.length} repos (${gitData.reposScanned} scanned)`)
 
 const sources = {
