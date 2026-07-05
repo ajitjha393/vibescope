@@ -1,0 +1,30 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+      - name: cli smoke test
+        run: |
+          node bin/vibescope.js --help
+          node bin/vibescope.js --json --claude-dir test/fixtures/claude --roots . --providers claude-code | node -e "
+            let s=''; process.stdin.on('data',(c)=>s+=c).on('end',()=>{
+              const d=JSON.parse(s);
+              if (d.totals.userMessages !== 1) { console.error('unexpected fixture totals'); process.exit(1); }
+              console.log('smoke ok:', d.totals.userMessages, 'prompt from fixture');
+            })"
