@@ -71,6 +71,7 @@ log(`  ${gitData.totalCommits} commits across ${gitData.repos.length} repos (${g
 
 const sources = {
   claudeCode: claude.found,
+  cursor: await cursorDetected(),
   git: gitData.reposScanned > 0,
 }
 
@@ -87,4 +88,17 @@ if (flag('json')) {
 } else {
   const { url } = await serve(data, { port: Number(opt('port', '4177')), open: !flag('no-open') })
   log(`dashboard → \x1b[1m${url}\x1b[0m  (ctrl-c to stop)`)
+}
+
+async function cursorDetected() {
+  const candidates =
+    process.platform === 'darwin'
+      ? [join(homedir(), 'Library', 'Application Support', 'Cursor')]
+      : [join(homedir(), '.config', 'Cursor'), join(homedir(), 'AppData', 'Roaming', 'Cursor')]
+  for (const c of candidates) {
+    try {
+      if ((await stat(c)).isDirectory()) return true
+    } catch {}
+  }
+  return false
 }
