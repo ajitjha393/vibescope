@@ -432,7 +432,7 @@ window.__VIBE__ = /*__DATA__*/null;
         D.recentSessions.map((s) => [s.title, agentLabel.get(s.provider) || s.provider || '—', s.project, s.date, s.prompts, s.toolCalls, money(s.cost)]));
     }
 
-    el('footer', { text: 'vibescope v0.1 · everything stays on this machine · estimates use standard API rates · MIT' }, app);
+    el('footer', { text: 'vibescope v0.2 · everything stays on this machine · estimates use standard API rates · MIT' }, app);
   }
 
   const hrs = (ms) => (ms >= 3600000 ? (ms / 3600000).toFixed(1) + ' h' : Math.round(ms / 60000) + ' min');
