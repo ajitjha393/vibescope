@@ -285,8 +285,10 @@ window.__VIBE__ = /*__DATA__*/null;
     // ---- activity heatmaps ----
     {
       const { chart, table } = card(grid, 'Daily rhythm', 'prompts and commits, per day', 'full');
-      heatmap(chart, 'Prompts to Claude', 'prompts', ['--heat-b1', '--heat-b2', '--heat-b3', '--heat-b4', '--heat-b5'], blue);
-      heatmap(chart, 'Commits authored', 'commits', ['--heat-a1', '--heat-a2', '--heat-a3', '--heat-a4', '--heat-a5'], aqua);
+      const pair = el('div', { style: 'display:flex;flex-wrap:wrap;gap:4px 48px' }, chart);
+      const agentsLabel = (D.agents || []).filter((a) => a.found && a.prompts > 0).map((a) => a.label).join(' + ') || 'agents';
+      heatmap(pair, `Prompts to ${agentsLabel}`, 'prompts', ['--heat-b1', '--heat-b2', '--heat-b3', '--heat-b4', '--heat-b5'], blue);
+      heatmap(pair, 'Commits authored', 'commits', ['--heat-a1', '--heat-a2', '--heat-a3', '--heat-a4', '--heat-a5'], aqua);
       dataTable(table, ['Date', 'Prompts', 'AI turns', 'Commits', 'Est. cost'],
         D.daily.filter((d) => d.prompts + d.commits + d.aiMsgs > 0).slice().reverse()
           .map((d) => [d.date, d.prompts, d.aiMsgs, d.commits, money(d.cost)]));
@@ -445,7 +447,8 @@ window.__VIBE__ = /*__DATA__*/null;
   }
 
   // ---------- calendar heatmap (sequential ramp = magnitude) ----------
-  function heatmap(parent, title, key, rampVars, keyColor) {
+  function heatmap(outer, title, key, rampVars, keyColor) {
+    const parent = el('div', { style: 'flex:0 1 auto;min-width:0' }, outer);
     const t = el('div', { class: 'hm-title' }, parent);
     el('span', { class: 'key' }, t).style.background = keyColor;
     t.appendChild(document.createTextNode(title));
@@ -517,17 +520,20 @@ window.__VIBE__ = /*__DATA__*/null;
   }
 
   // ---------- horizontal bars (≤24px thick, rounded data-end, value at tip) ----------
+  // Charts render at their container's real width — no viewBox letterboxing.
   function hbars(parent, items, color, tipRows) {
-    if (!items.length) { el('div', { class: 'hint', text: 'no data in this window' }, parent); return; }
-    const barH = 18, rowH = 30, labelW = 150, valueW = 56;
-    const W = 460, chartW = W - labelW - valueW;
+    if (!items.length) { el('div', { class: 'hint', text: 'no data in this window', style: 'margin-left:0' }, parent); return; }
+    const barH = 18, rowH = 30, valueW = 56;
+    const W = Math.max(300, parent.clientWidth || 460);
+    const labelW = Math.min(150, Math.round(W * 0.34));
+    const chartW = W - labelW - valueW;
     const max = Math.max(...items.map((i) => i.value));
-    const box = el('div', { class: 'scroll-x' }, parent);
-    const svg = el('svg', { width: '100%', height: items.length * rowH, viewBox: `0 0 ${W} ${items.length * rowH}`, preserveAspectRatio: 'xMinYMin meet' }, box);
+    const box = el('div', {}, parent);
+    const svg = el('svg', { width: W, height: items.length * rowH, viewBox: `0 0 ${W} ${items.length * rowH}` }, box);
     items.forEach((it, i) => {
       const y = i * rowH + (rowH - barH) / 2;
       const w = Math.max(2, (it.value / max) * chartW);
-      el('text', { x: labelW - 10, y: y + barH / 2 + 4, 'text-anchor': 'end', fill: css('--ink'), 'font-size': 12, text: truncate(it.label, 20) }, svg);
+      el('text', { x: labelW - 10, y: y + barH / 2 + 4, 'text-anchor': 'end', fill: css('--ink'), 'font-size': 12, text: truncate(it.label, Math.max(12, Math.floor(labelW / 7))) }, svg);
       const rr = Math.min(4, w / 2);
       const bar = el('path', {
         d: `M${labelW},${y} h${w - rr} q${rr},0 ${rr},${rr} v${barH - 2 * rr} q0,${rr} -${rr},${rr} h-${w - rr} z`,
@@ -542,11 +548,12 @@ window.__VIBE__ = /*__DATA__*/null;
   // ---------- columns (hourly / weekday) ----------
   function columns(parent, values, labelFor, color, height, labelAll = false) {
     const n = values.length;
-    const W = 460, pad = 4, bw = Math.min(24, (W - 30) / n - 3);
+    const W = Math.max(300, parent.clientWidth || 460);
+    const bw = Math.min(24, (W - 30) / n - 3);
     const H = height, base = H - 16;
     const max = Math.max(1, ...values);
     const peak = values.indexOf(Math.max(...values));
-    const svg = el('svg', { width: '100%', height: H, viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMinYMin meet' }, parent);
+    const svg = el('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` }, parent);
     el('line', { x1: 26, y1: base + 0.5, x2: W, y2: base + 0.5, stroke: css('--baseline'), 'stroke-width': 1 }, svg);
     const gy = base - (base - 12) * 0.5;
     el('line', { x1: 26, y1: gy, x2: W, y2: gy, stroke: css('--grid'), 'stroke-width': 1 }, svg);
@@ -621,6 +628,11 @@ window.__VIBE__ = /*__DATA__*/null;
 
   render();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  let resizeTimer;
+  addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(render, 150);
+  });
 })();
 </script>
 </body>
