@@ -1,5 +1,5 @@
 import { basename } from 'node:path'
-import { dayKey } from './claude.js'
+import { dayKey } from './util.js'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 

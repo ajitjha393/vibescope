@@ -4,6 +4,7 @@ import { createInterface } from 'node:readline'
 import { join, basename } from 'node:path'
 import { homedir } from 'node:os'
 import { estimateCost } from './pricing.js'
+import { dayKey, dayBucket } from './util.js'
 
 // Parses Claude Code session transcripts (~/.claude/projects/**/*.jsonl).
 //
@@ -225,21 +226,4 @@ export async function scanClaude({ claudeDir = join(homedir(), '.claude', 'proje
   }
 
   return { sessions, models, daily, hourly, weekday, totals, found: true }
-}
-
-export function dayKey(ts) {
-  const d = new Date(ts)
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${d.getFullYear()}-${m}-${day}`
-}
-
-function dayBucket(daily, ts) {
-  const key = dayKey(ts)
-  let b = daily.get(key)
-  if (!b) {
-    b = { prompts: 0, aiMsgs: 0, outputTokens: 0, cost: 0, commits: 0 }
-    daily.set(key, b)
-  }
-  return b
 }

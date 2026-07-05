@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import { readdir, stat } from 'node:fs/promises'
 import { join, basename } from 'node:path'
 import { promisify } from 'node:util'
-import { dayKey } from './claude.js'
+import { dayKey } from './util.js'
 
 const run = promisify(execFile)
 
