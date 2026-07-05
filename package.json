@@ -1,8 +1,17 @@
 {
   "name": "vibescope",
   "version": "0.1.0",
-  "description": "Local-first observability for the vibe-coding era. See what you and your AI agents actually did — sessions, tokens, cost, repos, rhythm — plus an auto-drafted standup recap. Zero setup: it reads what's already on your machine.",
+  "description": "Local-first observability for the vibe-coding era. Agent-agnostic: see what you and your coding agents (Claude Code, Cursor, Codex, Gemini, Aider) actually did — sessions, tokens, cost, tools, pair time — plus an auto-drafted standup recap. Zero setup: it reads what's already on your machine.",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ajitjha393/vibescope.git"
+  },
+  "homepage": "https://github.com/ajitjha393/vibescope#readme",
+  "bugs": {
+    "url": "https://github.com/ajitjha393/vibescope/issues"
+  },
+  "author": "Bishwajith Jha (https://github.com/ajitjha393)",
   "bin": {
     "vibescope": "bin/vibescope.js"
   },
@@ -23,8 +32,13 @@
   "keywords": [
     "claude-code",
     "cursor",
+    "codex",
+    "gemini-cli",
+    "aider",
+    "coding-agents",
     "ai",
     "analytics",
+    "observability",
     "dashboard",
     "developer-tools",
     "local-first",
