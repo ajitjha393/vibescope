@@ -12,7 +12,7 @@ function projectName(cwd) {
   return basename(cwd)
 }
 
-export function aggregate({ providers = [], gitData, rangeDays, identity, sources }) {
+export function aggregate({ providers = [], gitData, rangeDays, identity, sources, member = null }) {
   const claude = mergeProviders(providers)
   // Merge commit counts into the daily map the providers started.
   for (const [key, commits] of gitData.daily) {
@@ -148,6 +148,7 @@ export function aggregate({ providers = [], gitData, rangeDays, identity, source
     generatedAt: new Date().toISOString(),
     rangeDays,
     identity,
+    member,
     sources,
     totals,
     agents,
