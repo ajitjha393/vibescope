@@ -54,17 +54,21 @@ export function aggregate({ claude, gitData, rangeDays, identity, sources }) {
     .map(([model, v]) => ({ model, ...v }))
     .sort((a, b) => b.cost - a.cost)
 
-  // Highlights.
+  // Highlights. Busiest day ranks prompts first — a bulk-commit day (rebases,
+  // imports) shouldn't outrank a real working day; commits break ties, and a
+  // git-only history still gets a commits-based answer.
   let busiest = null
   for (const d of daily) {
-    const load = d.prompts + d.commits
-    if (!busiest || load > busiest.load) busiest = { date: d.date, load, prompts: d.prompts, commits: d.commits }
+    const score = d.prompts * 1e6 + d.commits
+    if (!busiest || score > busiest.score) busiest = { date: d.date, score, prompts: d.prompts, commits: d.commits }
   }
+  if (busiest) delete busiest.score
   let longest = null
   for (const s of claude.sessions) {
-    if (!s.start || !s.end) continue
-    const dur = s.end - s.start
-    if (!longest || dur > longest.durMs) longest = { title: s.title, project: projectName(s.project), durMs: dur, date: dayKey(s.start) }
+    const dur = s.activeMs || 0 // active stretches only — resumed session files span days
+    if (dur > 0 && (!longest || dur > longest.durMs)) {
+      longest = { title: s.title, project: projectName(s.project), durMs: dur, date: dayKey(s.start) }
+    }
   }
   const nightPrompts = claude.hourly.slice(22).concat(claude.hourly.slice(0, 5)).reduce((a, b) => a + b, 0)
   const nightOwlPct = claude.totals.userMessages ? Math.round((100 * nightPrompts) / claude.totals.userMessages) : 0
