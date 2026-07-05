@@ -128,6 +128,7 @@ export function aggregate({ providers = [], gitData, rangeDays, identity, source
   }
 
   const recap = buildRecap({ daily, sessions: claude.sessions, projects, totals })
+  const wow = weekOverWeek(daily, claude.sessions)
 
   const recent = [...claude.sessions]
     .filter((s) => s.end)
@@ -157,6 +158,7 @@ export function aggregate({ providers = [], gitData, rangeDays, identity, source
     weekday: claude.weekday,
     highlights,
     recap,
+    weekOverWeek: wow,
     recentSessions: recent,
   }
 }
@@ -205,6 +207,35 @@ function mergeProviders(provs) {
   return merged
 }
 
+function windowStats(daily, sessions, fromMs, toMs) {
+  const days = daily.filter((d) => {
+    const t = Date.parse(d.date)
+    return t >= fromMs && t < toMs
+  })
+  return {
+    prompts: days.reduce((a, d) => a + d.prompts, 0),
+    commits: days.reduce((a, d) => a + d.commits, 0),
+    cost: days.reduce((a, d) => a + d.cost, 0),
+    sessions: sessions.filter((s) => s.end && s.end >= fromMs && s.end < toMs).length,
+  }
+}
+
+function delta(cur, prev) {
+  return { cur, prev, pct: prev > 0 ? Math.round((100 * (cur - prev)) / prev) : null }
+}
+
+export function weekOverWeek(daily, sessions, now = Date.now()) {
+  const week = 7 * 86400000
+  const cur = windowStats(daily, sessions, now - week, now + 1)
+  const prev = windowStats(daily, sessions, now - 2 * week, now - week)
+  return {
+    prompts: delta(cur.prompts, prev.prompts),
+    commits: delta(cur.commits, prev.commits),
+    cost: delta(cur.cost, prev.cost),
+    sessions: delta(cur.sessions, prev.sessions),
+  }
+}
+
 function buildRecap({ daily, sessions, projects, totals }) {
   const now = Date.now()
   const weekAgo = now - 7 * 86400000
@@ -222,6 +253,14 @@ function buildRecap({ daily, sessions, projects, totals }) {
   const start = fmtDate(weekAgo)
   const end = fmtDate(now)
 
+  const wow = weekOverWeek(daily, sessions, now)
+  const arrow = (d) => (d.pct === null ? null : `${d.pct >= 0 ? '↑' : '↓'} ${Math.abs(d.pct)}%`)
+  const trendBits = [
+    arrow(wow.prompts) && `prompts ${arrow(wow.prompts)}`,
+    arrow(wow.commits) && `commits ${arrow(wow.commits)}`,
+    arrow(wow.cost) && `AI spend ${arrow(wow.cost)}`,
+  ].filter(Boolean)
+
   const lines = [
     `Week of ${start} – ${end}`,
     '',
@@ -229,6 +268,7 @@ function buildRecap({ daily, sessions, projects, totals }) {
     `- ${wSessions.length} AI pair session${wSessions.length === 1 ? '' : 's'} (${wPrompts} prompts) · ${wCommits} commit${wCommits === 1 ? '' : 's'} authored`,
     top.length ? `- Main focus: ${top[0][0]}` : null,
     `- Est. AI spend: $${wCost.toFixed(2)}`,
+    trendBits.length ? `- vs prior week: ${trendBits.join(' · ')}` : null,
     '',
     `(drafted by vibescope from local git + agent history — edit before posting)`,
   ].filter(Boolean)
