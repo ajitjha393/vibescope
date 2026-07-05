@@ -2,7 +2,7 @@
 import { writeFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { scanClaude } from '../src/claude.js'
+import { scanAll } from '../src/providers/index.js'
 import { scanGit, defaultIdentity } from '../src/gitscan.js'
 import { aggregate } from '../src/aggregate.js'
 import { serve } from '../src/serve.js'
@@ -59,10 +59,14 @@ const authors = opt('authors', '')
 console.error(`\x1b[1m◉ vibescope\x1b[0m v0.1.0 — reading what's already on your machine`)
 log(`window: last ${months} months · roots: ${roots.join(', ')}`)
 
-log('scanning Claude Code sessions…')
-const claude = await scanClaude({ sinceMs })
-if (!claude.found) log('no ~/.claude/projects found — Claude Code stats will be empty')
-else log(`  ${claude.totals.sessions} sessions · ${claude.totals.userMessages} prompts · $${claude.totals.estCostUSD.toFixed(2)} est.`)
+const agents = await scanAll({ sinceMs }, (p) => log(`scanning ${p.label} sessions…`))
+for (const a of agents) {
+  if (!a.detected) continue
+  const t = a.stats && a.stats.totals
+  if (t) log(`  ${a.label}: ${t.sessions} sessions · ${t.userMessages} prompts · $${t.estCostUSD.toFixed(2)} est.`)
+  else log(`  ${a.label}: detected, ${a.error || 'no data'}`)
+}
+const cc = agents.find((a) => a.id === 'claude-code')
 
 const identity = authors.length ? authors : await defaultIdentity()
 log(`scanning git repos (author: ${identity.join(', ') || 'anyone'})…`)
@@ -70,12 +74,12 @@ const gitData = await scanGit({ roots, authors: identity, sinceMs })
 log(`  ${gitData.totalCommits} commits across ${gitData.repos.length} repos (${gitData.reposScanned} scanned)`)
 
 const sources = {
-  claudeCode: claude.found,
+  claudeCode: !!(cc && cc.stats && cc.stats.found),
   cursor: await cursorDetected(),
   git: gitData.reposScanned > 0,
 }
 
-const data = aggregate({ claude, gitData, rangeDays, identity, sources })
+const data = aggregate({ providers: agents, gitData, rangeDays, identity, sources })
 
 const out = opt('out', null)
 if (out) {

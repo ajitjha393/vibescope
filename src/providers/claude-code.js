@@ -1,10 +1,27 @@
 import { createReadStream } from 'node:fs'
-import { readdir } from 'node:fs/promises'
+import { readdir, stat } from 'node:fs/promises'
 import { createInterface } from 'node:readline'
 import { join, basename } from 'node:path'
 import { homedir } from 'node:os'
-import { estimateCost } from './pricing.js'
-import { dayKey, dayBucket } from './util.js'
+import { estimateCost } from '../pricing.js'
+import { dayBucket } from '../util.js'
+
+export const id = 'claude-code'
+export const label = 'Claude Code'
+
+const rootDir = (claudeDir) => claudeDir || join(homedir(), '.claude', 'projects')
+
+export async function detect({ claudeDir } = {}) {
+  try {
+    return (await stat(rootDir(claudeDir))).isDirectory()
+  } catch {
+    return false
+  }
+}
+
+export async function scan(opts = {}) {
+  return scanClaude({ claudeDir: rootDir(opts.claudeDir), sinceMs: opts.sinceMs || 0 })
+}
 
 // Parses Claude Code session transcripts (~/.claude/projects/**/*.jsonl).
 //
@@ -209,6 +226,7 @@ export async function scanClaude({ claudeDir = join(homedir(), '.claude', 'proje
       for (const [cwd, n] of session.cwds) if (n > topCount) ((topCwd = cwd), (topCount = n))
       sessions.push({
         id: session.id,
+        provider: id,
         title: session.title,
         project: topCwd,
         start: session.start,

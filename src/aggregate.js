@@ -12,8 +12,9 @@ function projectName(cwd) {
   return basename(cwd)
 }
 
-export function aggregate({ claude, gitData, rangeDays, identity, sources }) {
-  // Merge commit counts into the daily map claude started.
+export function aggregate({ providers = [], gitData, rangeDays, identity, sources }) {
+  const claude = mergeProviders(providers)
+  // Merge commit counts into the daily map the providers started.
   for (const [key, commits] of gitData.daily) {
     let b = claude.daily.get(key)
     if (!b) {
@@ -133,6 +134,47 @@ export function aggregate({ claude, gitData, rangeDays, identity, sources }) {
     recap,
     recentSessions: recent,
   }
+}
+
+// Combines any number of provider stats into one activity picture.
+function mergeProviders(provs) {
+  const merged = {
+    sessions: [],
+    models: new Map(),
+    daily: new Map(),
+    hourly: new Array(24).fill(0),
+    weekday: new Array(7).fill(0),
+    totals: {
+      sessions: 0, userMessages: 0, assistantMessages: 0, subagentMessages: 0,
+      toolCalls: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0,
+      cacheWriteTokens: 0, estCostUSD: 0,
+    },
+  }
+  for (const p of provs) {
+    const s = p && p.stats
+    if (!s || !s.found) continue
+    merged.sessions.push(...s.sessions)
+    for (const [model, v] of s.models) {
+      const m = merged.models.get(model)
+      if (!m) merged.models.set(model, { ...v })
+      else for (const k of Object.keys(v)) m[k] += v[k]
+    }
+    for (const [date, v] of s.daily) {
+      let b = merged.daily.get(date)
+      if (!b) {
+        b = { prompts: 0, aiMsgs: 0, outputTokens: 0, cost: 0, commits: 0 }
+        merged.daily.set(date, b)
+      }
+      b.prompts += v.prompts
+      b.aiMsgs += v.aiMsgs
+      b.outputTokens += v.outputTokens
+      b.cost += v.cost
+    }
+    for (let i = 0; i < 24; i++) merged.hourly[i] += s.hourly[i]
+    for (let i = 0; i < 7; i++) merged.weekday[i] += s.weekday[i]
+    for (const k of Object.keys(merged.totals)) merged.totals[k] += s.totals[k] || 0
+  }
+  return merged
 }
 
 function buildRecap({ daily, sessions, projects, totals }) {
