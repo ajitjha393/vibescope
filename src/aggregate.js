@@ -136,6 +136,7 @@ export function aggregate({ providers = [], gitData, rangeDays, identity, source
     .slice(0, 12)
     .map((s) => ({
       title: s.title || '(untitled session)',
+      provider: s.provider,
       project: projectName(s.project),
       date: dayKey(s.end),
       prompts: s.userMsgs,
