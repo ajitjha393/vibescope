@@ -243,7 +243,10 @@ window.__VIBE__ = /*__DATA__*/null;
     const first = D.daily.find((d) => d.prompts + d.commits > 0);
     const span = first ? `${niceDate(first.date)} – ${niceDate(D.daily[D.daily.length - 1].date)}` : `last ${D.rangeDays} days`;
     const parsed = (D.agents || []).filter((a) => a.found).map((a) => a.label).join(' + ');
-    el('div', { class: 'meta', text: `${parsed ? parsed + ' · ' : ''}${span} · ${(D.identity && D.identity[0]) || 'you'}` }, top);
+    const right = el('div', { style: 'display:flex;align-items:center;gap:12px' }, top);
+    el('div', { class: 'meta', text: `${parsed ? parsed + ' · ' : ''}${span} · ${(D.identity && D.identity[0]) || 'you'}` }, right);
+    const shareBtn = el('button', { class: 'tbtn', text: 'share card ↓' }, right);
+    shareBtn.addEventListener('click', () => downloadWrapped(span).catch(() => (shareBtn.textContent = 'export failed')));
 
     const unparsed = (D.agents || []).filter((a) => a.detected && !a.found);
     if (unparsed.length) {
@@ -564,6 +567,55 @@ window.__VIBE__ = /*__DATA__*/null;
   }
 
   const truncate = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+
+  // ---------- wrapped share card (1200x630 png, rendered client-side) ----------
+  function wrappedSVG(period) {
+    const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const t = D.totals, h = D.highlights;
+    const topTool = (D.tools && D.tools[0] && D.tools[0].name) || '—';
+    const stats = [
+      ['Prompts typed', fmt(t.userMessages)],
+      ['Pair sessions', fmt(t.sessions)],
+      ['Pair time', (t.pairHours || 0) + ' h'],
+      ['Commits shipped', fmt(t.commits)],
+      ['Top focus', esc(truncate(String(h.topProject || '—'), 16))],
+      ['Favorite tool', esc(truncate(String(topTool), 16))],
+    ];
+    const cells = stats.map(([k, v], i) => {
+      const x = 90 + (i % 3) * 350, y = 400 + Math.floor(i / 3) * 105;
+      return `<text x="${x}" y="${y}" font-size="17" fill="#898781">${k}</text>
+        <text x="${x}" y="${y + 38}" font-size="32" font-weight="600" fill="#ffffff">${v}</text>`;
+    }).join('');
+    // The share asset deliberately commits to the dark brand look.
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
+      <rect width="1200" height="630" fill="#0d0d0d"/>
+      <rect x="40" y="40" width="1120" height="550" rx="28" fill="#1a1a19" stroke="rgba(255,255,255,0.12)"/>
+      <text x="90" y="126" font-size="30" font-weight="700" fill="#ffffff"><tspan fill="#3987e5">◉</tspan> vibescope <tspan fill="#898781" font-weight="400" font-size="21">wrapped</tspan></text>
+      <text x="90" y="158" font-size="17" fill="#c3c2b7">${esc(period)}</text>
+      <text x="90" y="296" font-size="92" font-weight="650" fill="#3987e5">${esc(money(t.estCostUSD))}</text>
+      <text x="90" y="332" font-size="18" fill="#898781">estimated AI spend · ${fmt(t.outputTokens)} tokens generated</text>
+      ${cells}
+      <text x="90" y="560" font-size="14" fill="#898781">measured entirely on my machine · vibescope, local-first dev observability</text>
+    </svg>`;
+  }
+
+  async function downloadWrapped(period) {
+    const svg = wrappedSVG(period);
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200; canvas.height = 630;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
+    canvas.toBlob((blob) => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'vibescope-wrapped.png';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    }, 'image/png');
+  }
 
   render();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
