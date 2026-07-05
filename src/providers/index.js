@@ -16,8 +16,9 @@
 // docs/providers.md walks through writing one.
 
 import * as claudeCode from './claude-code.js'
+import * as cursor from './cursor.js'
 
-export const providers = [claudeCode]
+export const providers = [claudeCode, cursor]
 
 export async function scanAll(opts = {}, onScan = () => {}) {
   const results = []

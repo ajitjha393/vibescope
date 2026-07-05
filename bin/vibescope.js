@@ -67,6 +67,7 @@ for (const a of agents) {
   else log(`  ${a.label}: detected, ${a.error || 'no data'}`)
 }
 const cc = agents.find((a) => a.id === 'claude-code')
+const cur = agents.find((a) => a.id === 'cursor')
 
 const identity = authors.length ? authors : await defaultIdentity()
 log(`scanning git repos (author: ${identity.join(', ') || 'anyone'})…`)
@@ -75,7 +76,8 @@ log(`  ${gitData.totalCommits} commits across ${gitData.repos.length} repos (${g
 
 const sources = {
   claudeCode: !!(cc && cc.stats && cc.stats.found),
-  cursor: await cursorDetected(),
+  // banner-worthy only when cursor is installed but its state couldn't be read
+  cursor: !!(cur && cur.detected && !(cur.stats && cur.stats.found)),
   git: gitData.reposScanned > 0,
 }
 
@@ -92,17 +94,4 @@ if (flag('json')) {
 } else {
   const { url } = await serve(data, { port: Number(opt('port', '4177')), open: !flag('no-open') })
   log(`dashboard → \x1b[1m${url}\x1b[0m  (ctrl-c to stop)`)
-}
-
-async function cursorDetected() {
-  const candidates =
-    process.platform === 'darwin'
-      ? [join(homedir(), 'Library', 'Application Support', 'Cursor')]
-      : [join(homedir(), '.config', 'Cursor'), join(homedir(), 'AppData', 'Roaming', 'Cursor')]
-  for (const c of candidates) {
-    try {
-      if ((await stat(c)).isDirectory()) return true
-    } catch {}
-  }
-  return false
 }
