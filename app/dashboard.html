@@ -411,14 +411,17 @@ window.__VIBE__ = /*__DATA__*/null;
       el('text', { x: 0, y: topPad + (i * 2) * step + cell - 3, fill: css('--muted'), 'font-size': 9.5, text: d }, svg);
     });
 
-    let lastMonth = -1;
+    let lastMonth = -1, lastLabelX = -Infinity;
     for (let i = 0; i < days; i++) {
       const date = new Date(start.getTime() + i * 86400000);
       const week = Math.floor(i / 7), row = (date.getDay() + 6) % 7;
       const x = left + week * step, y = topPad + row * step;
       if (row === 0 && date.getMonth() !== lastMonth) {
         lastMonth = date.getMonth();
-        el('text', { x, y: 10, fill: css('--muted'), 'font-size': 9.5, text: date.toLocaleDateString('en-US', { month: 'short' }) }, svg);
+        if (x - lastLabelX >= 30) {
+          lastLabelX = x;
+          el('text', { x, y: 10, fill: css('--muted'), 'font-size': 9.5, text: date.toLocaleDateString('en-US', { month: 'short' }) }, svg);
+        }
       }
       if (date > end) continue;
       const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
