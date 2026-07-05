@@ -76,6 +76,8 @@
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .tiles { grid-template-columns: repeat(2, 1fr); } }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; min-width: 0; }
   .card h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); letter-spacing: 0.01em; }
+  .card .hint { margin-left: 8px; }
+  svg { display: block; }
   .card .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
   .card .hint { color: var(--muted); font-size: 11.5px; font-weight: 400; }
   .tbtn {
@@ -395,7 +397,7 @@ window.__VIBE__ = /*__DATA__*/null;
       const c = el('section', { class: 'card full recap' }, grid);
       const head = el('div', { class: 'head' }, c);
       el('h2', { text: 'Your week, drafted' }, head).appendChild(
-        Object.assign(document.createElement('span'), { className: 'hint', textContent: ' standup, without writing it' }));
+        Object.assign(document.createElement('span'), { className: 'hint', textContent: 'standup, without writing it' }));
       const wow = D.weekOverWeek;
       if (wow) {
         const chips = el('div', { class: 'chips', style: 'margin-bottom:12px' }, c);
