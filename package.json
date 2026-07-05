@@ -17,7 +17,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "start": "node bin/vibescope.js"
+    "start": "node bin/vibescope.js",
+    "test": "node --test test/*.test.js"
   },
   "keywords": [
     "claude-code",
