@@ -261,10 +261,10 @@ window.__VIBE__ = /*__DATA__*/null;
     };
     tile('AI pair sessions', fmt(D.totals.sessions), `${fmt(D.totals.toolCalls)} tool calls`);
     tile('Prompts you typed', fmt(D.totals.userMessages), `${fmt(D.totals.assistantMessages)} AI turns`);
+    tile('Pair-coding time', (D.totals.pairHours || 0) + ' h', 'active stretches only');
     tile('AI output', fmt(D.totals.outputTokens), 'tokens generated');
     tile('Commits authored', fmt(D.totals.commits), `${D.projects.filter((p) => p.commits > 0).length} repos`);
     tile('Active days', fmt(D.totals.activeDays), `best streak ${D.highlights.bestStreak}`);
-    tile('Cache leverage', cachePct() + '%', 'of input read from cache');
 
     const grid = el('div', { class: 'grid' }, app);
 
@@ -369,6 +369,7 @@ window.__VIBE__ = /*__DATA__*/null;
       if (h.longestSession) chip('Longest session', hrs(h.longestSession.durMs), `${h.longestSession.project} · ${niceDate(h.longestSession.date)}`);
       chip('Night owl index', D.highlights.nightOwlPct + '%', 'prompts between 22:00–05:00');
       if (h.topProject) chip('Top focus', h.topProject, 'most-prompted project');
+      chip('Cache leverage', cachePct() + '%', 'of input read from prompt cache');
       dataTable(table, ['Highlight', 'Value'], [
         ['Busiest day', h.busiestDay ? `${h.busiestDay.date} (${h.busiestDay.prompts} prompts, ${h.busiestDay.commits} commits)` : '–'],
         ['Longest session', h.longestSession ? `${hrs(h.longestSession.durMs)} on ${h.longestSession.project}` : '–'],
