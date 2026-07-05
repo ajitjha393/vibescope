@@ -18,8 +18,9 @@
 import * as claudeCode from './claude-code.js'
 import * as cursor from './cursor.js'
 import * as codex from './codex.js'
+import * as gemini from './gemini.js'
 
-export const providers = [claudeCode, cursor, codex]
+export const providers = [claudeCode, cursor, codex, gemini]
 
 export async function scanAll(opts = {}, onScan = () => {}) {
   const results = []
