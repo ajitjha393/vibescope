@@ -155,6 +155,7 @@ export async function scanClaude({ claudeDir = join(homedir(), '.claude', 'proje
             session.outputTokens += u.output_tokens || 0
             session.cost += cost
 
+            if (!msg.model || msg.model === '<synthetic>') continue
             const m = models.get(msg.model) || {
               inputTokens: 0,
               outputTokens: 0,
