@@ -128,6 +128,7 @@ export function aggregate({ providers = [], gitData, rangeDays, identity, source
     daily,
     projects,
     models,
+    tools: [...claude.toolUsage.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
     hourly: claude.hourly,
     weekday: claude.weekday,
     highlights,
@@ -144,6 +145,7 @@ function mergeProviders(provs) {
     daily: new Map(),
     hourly: new Array(24).fill(0),
     weekday: new Array(7).fill(0),
+    toolUsage: new Map(),
     totals: {
       sessions: 0, userMessages: 0, assistantMessages: 0, subagentMessages: 0,
       toolCalls: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0,
@@ -172,6 +174,7 @@ function mergeProviders(provs) {
     }
     for (let i = 0; i < 24; i++) merged.hourly[i] += s.hourly[i]
     for (let i = 0; i < 7; i++) merged.weekday[i] += s.weekday[i]
+    if (s.toolUsage) for (const [name, n] of s.toolUsage) merged.toolUsage.set(name, (merged.toolUsage.get(name) || 0) + n)
     for (const k of Object.keys(merged.totals)) merged.totals[k] += s.totals[k] || 0
   }
   return merged

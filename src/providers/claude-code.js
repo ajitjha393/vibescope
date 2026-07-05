@@ -63,6 +63,7 @@ export async function scanClaude({ claudeDir = join(homedir(), '.claude', 'proje
   const daily = new Map() // YYYY-MM-DD -> {prompts, aiMsgs, outputTokens, cost}
   const hourly = new Array(24).fill(0) // prompts by local hour
   const weekday = new Array(7).fill(0) // prompts by local weekday (0=Sun)
+  const toolUsage = new Map() // tool name -> invocation count
   const totals = {
     sessions: 0,
     userMessages: 0,
@@ -82,7 +83,7 @@ export async function scanClaude({ claudeDir = join(homedir(), '.claude', 'proje
       .filter((d) => d.isDirectory())
       .map((d) => join(claudeDir, d.name))
   } catch {
-    return { sessions, models, daily, hourly, weekday, totals, found: false }
+    return { sessions, models, daily, hourly, weekday, toolUsage, totals, found: false }
   }
 
   for (const dir of projectDirs) {
@@ -152,6 +153,8 @@ export async function scanClaude({ claudeDir = join(homedir(), '.claude', 'proje
               if (b && b.type === 'tool_use' && b.id && !seenToolIds.has(b.id)) {
                 seenToolIds.add(b.id)
                 session.toolCalls += 1
+                const tool = b.name || 'unknown'
+                toolUsage.set(tool, (toolUsage.get(tool) || 0) + 1)
               }
             }
           }
@@ -243,5 +246,5 @@ export async function scanClaude({ claudeDir = join(homedir(), '.claude', 'proje
     }
   }
 
-  return { sessions, models, daily, hourly, weekday, totals, found: true }
+  return { sessions, models, daily, hourly, weekday, toolUsage, totals, found: true }
 }
