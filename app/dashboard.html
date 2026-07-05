@@ -393,6 +393,21 @@ window.__VIBE__ = /*__DATA__*/null;
       const head = el('div', { class: 'head' }, c);
       el('h2', { text: 'Your week, drafted' }, head).appendChild(
         Object.assign(document.createElement('span'), { className: 'hint', textContent: ' standup, without writing it' }));
+      const wow = D.weekOverWeek;
+      if (wow) {
+        const chips = el('div', { class: 'chips', style: 'margin-bottom:12px' }, c);
+        const wchip = (k, d, fmtV) => {
+          const cc2 = el('div', { class: 'chip', style: 'flex:1 1 20%; min-width:130px; padding:8px 12px' }, chips);
+          el('div', { class: 'k', text: k }, cc2);
+          const v = el('div', { class: 'v', text: fmtV(d.cur) }, cc2);
+          if (d.pct !== null) el('div', { class: 's', text: `${d.pct >= 0 ? '↑' : '↓'} ${Math.abs(d.pct)}% vs prior week (${fmtV(d.prev)})` }, cc2);
+          else el('div', { class: 's', text: 'no prior-week data' }, cc2);
+        };
+        wchip('Prompts · 7d', wow.prompts, fmt);
+        wchip('Commits · 7d', wow.commits, fmt);
+        wchip('Sessions · 7d', wow.sessions, fmt);
+        wchip('AI spend · 7d', wow.cost, money);
+      }
       const pre = el('pre', {}, c);
       pre.textContent = D.recap.week;
       const btn = el('button', { class: 'copy', text: 'copy' }, c);
