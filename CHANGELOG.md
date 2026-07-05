@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.3.0 — 2026-07-05
+
+### Added
+- **Team mode** — `vibescope team <snapshots…>` merges member exports
+  (`--json --name <who>`) into a team dashboard: combined spend/prompts/
+  pair-time tiles, per-member bars, agent adoption, team rhythm heatmap
+  with per-member splits, and a member detail table
+- `--name` stamps exports; `--redact` strips session titles before sharing
+- Charts size to their real container and re-render on resize (no more
+  letterboxed bars on wide screens or shrunken text on mobile); the two
+  calendar heatmaps pair up side-by-side when they fit
+
+### Fixed
+- Default git identity reads the **global** config (running inside a repo
+  with a local identity override no longer hijacks the author filter), and
+  each repo's own identity joins the match set — work and personal repos
+  with different emails are all yours
+- Repos reachable from overlapping roots no longer double-count
+- Card titles and hints no longer run together
+
 ## 0.2.0 — 2026-07-05
 
 vibescope is now **agent-agnostic**: every coding agent is a provider behind
