@@ -59,7 +59,7 @@ const authors = opt('authors', '')
 console.error(`\x1b[1m◉ vibescope\x1b[0m v0.1.0 — reading what's already on your machine`)
 log(`window: last ${months} months · roots: ${roots.join(', ')}`)
 
-const agents = await scanAll({ sinceMs }, (p) => log(`scanning ${p.label} sessions…`))
+const agents = await scanAll({ sinceMs, roots }, (p) => log(`scanning ${p.label} sessions…`))
 for (const a of agents) {
   if (!a.detected) continue
   const t = a.stats && a.stats.totals
