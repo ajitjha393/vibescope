@@ -1,0 +1,35 @@
+{
+  "name": "vibescope",
+  "version": "0.1.0",
+  "description": "Local-first observability for the vibe-coding era. See what you and your AI agents actually did — sessions, tokens, cost, repos, rhythm — plus an auto-drafted standup recap. Zero setup: it reads what's already on your machine.",
+  "type": "module",
+  "bin": {
+    "vibescope": "bin/vibescope.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin",
+    "src",
+    "app",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node bin/vibescope.js"
+  },
+  "keywords": [
+    "claude-code",
+    "cursor",
+    "ai",
+    "analytics",
+    "dashboard",
+    "developer-tools",
+    "local-first",
+    "standup",
+    "tokens",
+    "git"
+  ],
+  "license": "MIT"
+}
