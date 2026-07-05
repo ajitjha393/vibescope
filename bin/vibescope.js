@@ -23,6 +23,9 @@ Options:
   --roots <dirs>    Comma-separated dirs to scan for git repos (default: cwd, or ~/work if cwd has no repos)
   --months <n>      How far back to look (default: 6)
   --authors <list>  Comma-separated substrings matching your git email/name (default: your git config)
+  --providers <ids> Only scan these agents (e.g. claude-code,cursor). Default: all detected
+  --claude-dir <p>  Override Claude Code history location (~/.claude/projects)
+  --cursor-dir <p>  Override Cursor user-data location
   --port <n>        Dashboard port (default: 4177)
   --json            Print aggregated data as JSON to stdout instead of serving
   --out <file>      Also write the aggregated JSON to a file
@@ -59,7 +62,11 @@ const authors = opt('authors', '')
 console.error(`\x1b[1m◉ vibescope\x1b[0m v0.1.0 — reading what's already on your machine`)
 log(`window: last ${months} months · roots: ${roots.join(', ')}`)
 
-const agents = await scanAll({ sinceMs, roots }, (p) => log(`scanning ${p.label} sessions…`))
+const only = opt('providers', '').split(',').map((s) => s.trim()).filter(Boolean)
+const agents = await scanAll(
+  { sinceMs, roots, only, claudeDir: opt('claude-dir', null), cursorDir: opt('cursor-dir', null) },
+  (p) => log(`scanning ${p.label} sessions…`),
+)
 for (const a of agents) {
   if (!a.detected) continue
   const t = a.stats && a.stats.totals
