@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>vibescope team</title>
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e;
+    --muted: #898781; --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.1);
+    --blue: #2a78d6; --aqua: #1baf7a;
+    --heat-0: #f0efec;
+    --heat-1: #cde2fb; --heat-2: #86b6ef; --heat-3: #3987e5; --heat-4: #1c5cab; --heat-5: #0d366b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
+      --muted: #898781; --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.1);
+      --blue: #3987e5; --aqua: #199e70;
+      --heat-0: #262624;
+      --heat-1: #16406e; --heat-2: #1c5cab; --heat-3: #2a78d6; --heat-4: #5598e7; --heat-5: #9ec5f4;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { color-scheme: light dark; }
+  body { background: var(--page); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 28px 24px 64px; }
+  header.top { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .logo { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .logo .dot { color: var(--blue); }
+  .logo small { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 10px; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+  .tile .label { color: var(--ink-2); font-size: 12px; }
+  .tile .value { font-size: 28px; font-weight: 620; letter-spacing: -0.01em; }
+  .tile .sub { color: var(--muted); font-size: 11.5px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .grid .full { grid-column: 1 / -1; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; min-width: 0; }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin-bottom: 14px; }
+  .card .hint { margin-left: 8px; color: var(--muted); font-size: 11.5px; font-weight: 400; }
+  .scroll-x { overflow-x: auto; }
+  table.data { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  table.data th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 10px 6px 0; border-bottom: 1px solid var(--grid); }
+  table.data td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--grid); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  table.data td:first-child { color: var(--ink); font-variant-numeric: normal; }
+  .legend { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 10.5px; }
+  .legend .cell { width: 10px; height: 10px; border-radius: 2px; }
+  footer { margin-top: 26px; color: var(--muted); font-size: 11.5px; text-align: center; }
+  #tip { position: fixed; pointer-events: none; z-index: 10; display: none; max-width: 280px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.13); padding: 8px 11px; font-size: 12px; }
+  #tip .t { color: var(--muted); font-size: 11px; margin-bottom: 3px; }
+  #tip .row { display: flex; align-items: center; gap: 6px; }
+  #tip .row .key { width: 8px; height: 3px; border-radius: 2px; }
+  #tip .row .val { font-weight: 600; }
+  #tip .row .lbl { color: var(--ink-2); }
+  .empty { text-align: center; padding: 120px 20px; color: var(--muted); }
+  .empty code { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; }
+  svg { display: block; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div id="tip"></div>
+<script>
+window.__VIBE__ = /*__DATA__*/null;
+(function () {
+  'use strict';
+  const D = window.__VIBE__;
+  const app = document.getElementById('app');
+  if (!D || D.kind !== 'team') {
+    app.innerHTML = '<div class="empty"><p style="font-size:17px;font-weight:600;margin-bottom:8px">no team data</p><p>Each member: <code>npx vibescope --json --name alice --redact &gt; alice.json</code><br>Then: <code>npx vibescope team ./snapshots/</code></p></div>';
+    return;
+  }
+
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const el = (tag, attrs = {}, parent) => {
+    const ns = 'http://www.w3.org/2000/svg';
+    const node = ['svg', 'rect', 'path', 'text', 'line', 'g'].includes(tag)
+      ? document.createElementNS(ns, tag) : document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'text') node.textContent = v;
+      else if (k === 'html') node.innerHTML = v;
+      else node.setAttribute(k, v);
+    }
+    if (parent) parent.appendChild(node);
+    return node;
+  };
+  const fmt = (n) => {
+    if (n == null) return '–';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e4) return Math.round(n / 1e3) + 'K';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(Math.round(n));
+  };
+  const money = (n) => (n >= 100 ? '$' + Math.round(n).toLocaleString() : '$' + n.toFixed(2));
+  const truncate = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+
+  const tip = document.getElementById('tip');
+  function showTip(evt, title, rows) {
+    tip.textContent = '';
+    if (title) el('div', { class: 't', text: title }, tip);
+    for (const r of rows) {
+      const row = el('div', { class: 'row' }, tip);
+      if (r.color) el('span', { class: 'key' }, row).style.background = r.color;
+      el('span', { class: 'val', text: r.value }, row);
+      el('span', { class: 'lbl', text: r.label }, row);
+    }
+    tip.style.display = 'block';
+    moveTip(evt);
+  }
+  function moveTip(evt) {
+    const pad = 14;
+    let x = evt.clientX + pad, y = evt.clientY + pad;
+    const r = tip.getBoundingClientRect();
+    if (x + r.width > innerWidth - 8) x = evt.clientX - r.width - pad;
+    if (y + r.height > innerHeight - 8) y = evt.clientY - r.height - pad;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  const hideTip = () => (tip.style.display = 'none');
+  const hover = (node, fn) => {
+    node.addEventListener('pointerenter', fn);
+    node.addEventListener('pointermove', (e) => (fn(e), moveTip(e)));
+    node.addEventListener('pointerleave', hideTip);
+  };
+
+  function dataTable(parent, cols, rows) {
+    const wrap = el('div', { class: 'scroll-x' }, parent);
+    const t = el('table', { class: 'data' }, wrap);
+    const tr = el('tr', {}, el('thead', {}, t));
+    for (const c of cols) el('th', { text: c }, tr);
+    const tb = el('tbody', {}, t);
+    for (const r of rows) {
+      const row = el('tr', {}, tb);
+      for (const v of r) el('td', { text: v == null ? '–' : String(v) }, row);
+    }
+  }
+
+  function hbars(parent, items, color, tipRows) {
+    if (!items.length) { el('div', { class: 'hint', text: 'nothing here yet', style: 'margin-left:0' }, parent); return; }
+    const barH = 18, rowH = 30, valueW = 56;
+    const W = Math.max(300, parent.clientWidth || 460);
+    const labelW = Math.min(150, Math.round(W * 0.34));
+    const chartW = W - labelW - valueW;
+    const max = Math.max(...items.map((i) => i.value));
+    const svg = el('svg', { width: W, height: items.length * rowH, viewBox: `0 0 ${W} ${items.length * rowH}` }, parent);
+    items.forEach((it, i) => {
+      const y = i * rowH + (rowH - barH) / 2;
+      const w = Math.max(2, (it.value / max) * chartW);
+      el('text', { x: labelW - 10, y: y + barH / 2 + 4, 'text-anchor': 'end', fill: css('--ink'), 'font-size': 12, text: truncate(it.label, Math.max(12, Math.floor(labelW / 7))) }, svg);
+      const rr = Math.min(4, w / 2);
+      el('path', { d: `M${labelW},${y} h${w - rr} q${rr},0 ${rr},${rr} v${barH - 2 * rr} q0,${rr} -${rr},${rr} h-${w - rr} z`, fill: color }, svg);
+      el('text', { x: labelW + w + 8, y: y + barH / 2 + 4, fill: css('--ink-2'), 'font-size': 11.5, text: (it.fmt || fmt)(it.value) }, svg);
+      const hit = el('rect', { x: 0, y: i * rowH, width: W, height: rowH, fill: 'transparent' }, svg);
+      hover(hit, (e) => showTip(e, it.label, tipRows(it.extra)));
+    });
+  }
+
+  function heatmap(parent, days) {
+    const byDate = new Map(days.map((d) => [d.date, d]));
+    const dates = days.map((d) => Date.parse(d.date));
+    const end = new Date(Math.max(...dates, Date.now())); end.setHours(12, 0, 0, 0);
+    const start = new Date(Math.min(...dates));
+    start.setHours(12, 0, 0, 0);
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+
+    const vals = days.map((d) => d.prompts).filter((v) => v > 0).sort((a, b) => a - b);
+    const q = (p) => (vals.length ? vals[Math.min(vals.length - 1, Math.floor(p * vals.length))] : 1);
+    const thresholds = [1, Math.max(2, q(0.5)), Math.max(3, q(0.75)), Math.max(4, q(0.92))];
+    const ramp = ['--heat-1', '--heat-2', '--heat-3', '--heat-4', '--heat-5'].map(css);
+    const zero = css('--heat-0');
+    const color = (v) => {
+      if (!v) return zero;
+      return ramp[v >= thresholds[3] ? 4 : v >= thresholds[2] ? 3 : v >= thresholds[1] ? 2 : 1];
+    };
+
+    const cell = 13, gap = 3, step = cell + gap;
+    const nDays = Math.round((end - start) / 86400000) + 1;
+    const weeks = Math.ceil(nDays / 7);
+    const left = 26, topPad = 16;
+    const w = left + weeks * step, h = topPad + 7 * step;
+    const box = el('div', { class: 'scroll-x' }, parent);
+    const svg = el('svg', { width: w, height: h, viewBox: `0 0 ${w} ${h}` }, box);
+    ['Mon', 'Wed', 'Fri'].forEach((dd, i) =>
+      el('text', { x: 0, y: topPad + i * 2 * step + cell - 3, fill: css('--muted'), 'font-size': 9.5, text: dd }, svg));
+    let lastMonth = -1, lastLabelX = -Infinity;
+    for (let i = 0; i < nDays; i++) {
+      const date = new Date(start.getTime() + i * 86400000);
+      const week = Math.floor(i / 7), row = (date.getDay() + 6) % 7;
+      const x = left + week * step, y = topPad + row * step;
+      if (row === 0 && date.getMonth() !== lastMonth) {
+        lastMonth = date.getMonth();
+        if (x - lastLabelX >= 30) {
+          lastLabelX = x;
+          el('text', { x, y: 10, fill: css('--muted'), 'font-size': 9.5, text: date.toLocaleDateString('en-US', { month: 'short' }) }, svg);
+        }
+      }
+      if (date > end) continue;
+      const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const d = byDate.get(iso);
+      const r = el('rect', { x, y, width: cell, height: cell, rx: 3, fill: color(d ? d.prompts : 0) }, svg);
+      hover(r, (e) => {
+        const rows = [
+          { value: String(d ? d.prompts : 0), label: 'team prompts', color: css('--blue') },
+          { value: String(d ? d.commits : 0), label: 'commits', color: css('--aqua') },
+          { value: money(d ? d.cost : 0), label: 'est. cost' },
+        ];
+        const by = d && d.byMember ? Object.entries(d.byMember) : [];
+        for (const [who, n] of by) rows.push({ value: String(n), label: who });
+        showTip(e, date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }), rows);
+      });
+    }
+    const lg = el('div', { class: 'legend', style: `margin: 4px 0 0 ${left}px` }, parent);
+    lg.appendChild(document.createTextNode('less'));
+    [zero, ...ramp.slice(1)].forEach((c) => (el('span', { class: 'cell' }, lg).style.background = c));
+    lg.appendChild(document.createTextNode('more'));
+  }
+
+  function render() {
+    app.textContent = '';
+    const blue = css('--blue');
+
+    const top = el('header', { class: 'top' }, app);
+    el('div', { class: 'logo', html: '<span class="dot">◉</span> vibescope <small>team</small>' }, top);
+    el('div', { class: 'meta', text: `${D.members.length} members · merged ${new Date(D.generatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` }, top);
+
+    const tiles = el('div', { class: 'tiles' }, app);
+    const tile = (label, value, sub) => {
+      const t = el('div', { class: 'tile' }, tiles);
+      el('div', { class: 'label', text: label }, t);
+      el('div', { class: 'value', text: value }, t);
+      if (sub) el('div', { class: 'sub', text: sub }, t);
+    };
+    tile('Team AI spend', money(D.totals.cost), 'estimated, standard rates');
+    tile('Prompts', fmt(D.totals.prompts), `${fmt(D.totals.sessions)} sessions`);
+    tile('Pair-coding time', D.totals.pairHours + ' h', 'active stretches');
+    tile('Commits', fmt(D.totals.commits), 'authored by members');
+    tile('AI output', fmt(D.totals.outputTokens), 'tokens generated');
+
+    const grid = el('div', { class: 'grid' }, app);
+
+    {
+      const c = el('section', { class: 'card' }, grid);
+      el('h2', { text: 'Members', html: 'Members<span class="hint">prompts per person</span>' }, c);
+      hbars(c, D.members.slice(0, 10).map((m) => ({ label: m.name, value: m.prompts, extra: m })), blue, (m) => [
+        { value: fmt(m.prompts), label: 'prompts', color: blue },
+        { value: fmt(m.sessions), label: 'sessions' },
+        { value: m.pairHours + ' h', label: 'pair time' },
+        { value: fmt(m.commits), label: 'commits' },
+        { value: m.cost > 0 ? money(m.cost) : '—', label: 'est. cost' },
+      ]);
+    }
+
+    {
+      const c = el('section', { class: 'card' }, grid);
+      el('h2', { html: 'Agent adoption<span class="hint">who uses what</span>' }, c);
+      hbars(c, D.agents.map((a) => ({ label: a.label, value: a.prompts, extra: a })), blue, (a) => [
+        { value: fmt(a.prompts), label: 'prompts', color: blue },
+        { value: `${a.users}/${D.members.length}`, label: 'members using it' },
+        { value: a.cost > 0 ? money(a.cost) : '—', label: 'est. cost' },
+      ]);
+    }
+
+    {
+      const c = el('section', { class: 'card full' }, grid);
+      el('h2', { html: 'Team rhythm<span class="hint">prompts per day, hover for the member split</span>' }, c);
+      heatmap(c, D.daily);
+    }
+
+    {
+      const c = el('section', { class: 'card' }, grid);
+      el('h2', { html: 'What the agents did<span class="hint">tool invocations, team-wide</span>' }, c);
+      hbars(c, (D.tools || []).slice(0, 8).map((t) => ({ label: t.name, value: t.count })), blue, () => []);
+    }
+
+    {
+      const c = el('section', { class: 'card' }, grid);
+      el('h2', { html: 'Member detail<span class="hint">everything, per person</span>' }, c);
+      dataTable(c, ['Member', 'Prompts', 'Sessions', 'Pair time', 'Commits', 'Agents', 'Top focus', 'Est. cost'],
+        D.members.map((m) => [
+          m.name, m.prompts, m.sessions, m.pairHours + ' h', m.commits,
+          m.agents.join(', ') || '—', m.topProject || '—', m.cost > 0 ? money(m.cost) : '—',
+        ]));
+    }
+
+    el('footer', { text: 'vibescope team · merged from member-exported snapshots · nothing leaves your network unless you put it there · MIT' }, app);
+  }
+
+  render();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  let resizeTimer;
+  addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(render, 150); });
+})();
+</script>
+</body>
+</html>
