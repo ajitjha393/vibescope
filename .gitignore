@@ -1,0 +1,4 @@
+node_modules/
+*.log
+vibescope-data.json
+.DS_Store
