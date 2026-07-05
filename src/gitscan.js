@@ -62,16 +62,20 @@ export async function scanGit({ roots, authors, sinceMs }) {
 
   for (const path of repoPaths) {
     const out = await git(
-      ['log', '--all', '--no-merges', `--since=${since}`, '--pretty=%ae%x09%an%x09%aI'],
+      ['log', '--all', '--no-merges', `--since=${since}`, '--pretty=%ae%x09%an%x09%aI%x09%s'],
       path,
     )
     if (!out) continue
     let commits = 0
     let lastCommit = null
+    const seen = new Set() // author-date + subject: stable across rebases/cherry-picks on --all branches
     for (const line of out.split('\n')) {
       if (!line) continue
-      const [email = '', name = '', iso = ''] = line.split('\t')
+      const [email = '', name = '', iso = '', subject = ''] = line.split('\t')
       if (!matches(email.toLowerCase(), name.toLowerCase())) continue
+      const dedupeKey = `${iso}\t${subject}`
+      if (seen.has(dedupeKey)) continue
+      seen.add(dedupeKey)
       const ts = Date.parse(iso)
       if (!Number.isFinite(ts) || ts < sinceMs) continue
       commits += 1
