@@ -17,8 +17,9 @@
 
 import * as claudeCode from './claude-code.js'
 import * as cursor from './cursor.js'
+import * as codex from './codex.js'
 
-export const providers = [claudeCode, cursor]
+export const providers = [claudeCode, cursor, codex]
 
 export async function scanAll(opts = {}, onScan = () => {}) {
   const results = []
