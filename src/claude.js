@@ -87,9 +87,12 @@ export async function scanClaude({ claudeDir = join(homedir(), '.claude', 'proje
         toolCalls: 0,
         outputTokens: 0,
         cost: 0,
+        activeMs: 0,
       }
       const seenRequests = new Set()
       const seenToolIds = new Set()
+      let lastTs = null
+      const IDLE_GAP = 30 * 60 * 1000 // resumed sessions span days; only count active stretches
 
       const rl = createInterface({ input: createReadStream(join(dir, file)), crlfDelay: Infinity })
       for await (const line of rl) {
@@ -109,6 +112,11 @@ export async function scanClaude({ claudeDir = join(homedir(), '.claude', 'proje
           if (ts < sinceMs) continue
           if (session.start === null || ts < session.start) session.start = ts
           if (session.end === null || ts > session.end) session.end = ts
+          if (lastTs !== null) {
+            const delta = ts - lastTs
+            if (delta > 0 && delta <= IDLE_GAP) session.activeMs += delta
+          }
+          lastTs = ts
         }
         if (obj.cwd) session.cwds.set(obj.cwd, (session.cwds.get(obj.cwd) || 0) + 1)
 
@@ -208,6 +216,7 @@ export async function scanClaude({ claudeDir = join(homedir(), '.claude', 'proje
         toolCalls: session.toolCalls,
         outputTokens: session.outputTokens,
         cost: session.cost,
+        activeMs: session.activeMs,
       })
       totals.sessions += 1
       totals.toolCalls += session.toolCalls
