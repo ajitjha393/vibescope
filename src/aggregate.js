@@ -89,12 +89,35 @@ export function aggregate({ providers = [], gitData, rangeDays, identity, source
 
   const activeDays = daily.filter((d) => d.prompts + d.commits > 0).length
 
+  const pairMs = claude.sessions.reduce((a, s) => a + (s.activeMs || 0), 0)
   const totals = {
     ...claude.totals,
     commits: gitData.totalCommits,
     reposTouched: projects.filter((p) => p.commits > 0 || p.sessions > 0).length,
     activeDays,
+    pairHours: Math.round(pairMs / 360000) / 10,
   }
+
+  // Per-agent breakdown — every provider shows up, parsed or not.
+  const agents = providers.map((p) => {
+    const t = (p.stats && p.stats.totals) || {}
+    const sess = (p.stats && p.stats.sessions) || []
+    return {
+      id: p.id,
+      label: p.label,
+      experimental: !!p.experimental,
+      detected: !!p.detected,
+      found: !!(p.stats && p.stats.found),
+      error: p.error || (p.stats && p.stats.reason) || null,
+      sessions: t.sessions || 0,
+      prompts: t.userMessages || 0,
+      aiMsgs: t.assistantMessages || 0,
+      toolCalls: t.toolCalls || 0,
+      cost: t.estCostUSD || 0,
+      pairHours: Math.round(sess.reduce((a, s) => a + (s.activeMs || 0), 0) / 360000) / 10,
+      lastActive: sess.reduce((a, s) => Math.max(a, s.end || 0), 0) || null,
+    }
+  })
 
   const highlights = {
     busiestDay: busiest,
@@ -125,6 +148,7 @@ export function aggregate({ providers = [], gitData, rangeDays, identity, source
     identity,
     sources,
     totals,
+    agents,
     daily,
     projects,
     models,
@@ -164,13 +188,14 @@ function mergeProviders(provs) {
     for (const [date, v] of s.daily) {
       let b = merged.daily.get(date)
       if (!b) {
-        b = { prompts: 0, aiMsgs: 0, outputTokens: 0, cost: 0, commits: 0 }
+        b = { prompts: 0, aiMsgs: 0, outputTokens: 0, cost: 0, commits: 0, byAgent: {} }
         merged.daily.set(date, b)
       }
       b.prompts += v.prompts
       b.aiMsgs += v.aiMsgs
       b.outputTokens += v.outputTokens
       b.cost += v.cost
+      if (v.prompts > 0) b.byAgent[p.id] = (b.byAgent[p.id] || 0) + v.prompts
     }
     for (let i = 0; i < 24; i++) merged.hourly[i] += s.hourly[i]
     for (let i = 0; i < 7; i++) merged.weekday[i] += s.weekday[i]
