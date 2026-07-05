@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>vibescope</title>
+<style>
+  :root {
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.1);
+    --blue: #2a78d6;
+    --aqua: #1baf7a;
+    --heat-0: #f0efec;
+    --heat-b1: #cde2fb; --heat-b2: #86b6ef; --heat-b3: #3987e5; --heat-b4: #1c5cab; --heat-b5: #0d366b;
+    --heat-a1: #d9f3e8; --heat-a2: #8fdcbd; --heat-a3: #1baf7a; --heat-a4: #0e7d57; --heat-a5: #07523a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255, 255, 255, 0.1);
+      --blue: #3987e5;
+      --aqua: #199e70;
+      --heat-0: #262624;
+      --heat-b1: #16406e; --heat-b2: #1c5cab; --heat-b3: #2a78d6; --heat-b4: #5598e7; --heat-b5: #9ec5f4;
+      --heat-a1: #0d3f2d; --heat-a2: #0e7d57; --heat-a3: #199e70; --heat-a4: #3ec895; --heat-a5: #a9ecd2;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { color-scheme: light dark; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 28px 24px 64px; }
+  header.top { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .logo { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .logo .dot { color: var(--blue); }
+  .logo small { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 10px; letter-spacing: 0; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .banner {
+    margin: 14px 0 0; padding: 8px 14px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface); color: var(--ink-2); font-size: 12.5px;
+  }
+  .hero-row { display: flex; gap: 16px; align-items: stretch; margin-top: 18px; flex-wrap: wrap; }
+  .hero {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 22px 26px; min-width: 240px; flex: 1 1 240px; display: flex; flex-direction: column; justify-content: center;
+  }
+  .hero .label { color: var(--ink-2); font-size: 12.5px; }
+  .hero .value { font-size: 52px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.1; margin: 2px 0; }
+  .hero .sub { color: var(--muted); font-size: 12.5px; }
+  .tiles { display: grid; grid-template-columns: repeat(3, minmax(130px, 1fr)); gap: 16px; flex: 2 1 480px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .tile .label { color: var(--ink-2); font-size: 12px; }
+  .tile .value { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+  .tile .sub { color: var(--muted); font-size: 11.5px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .grid .full { grid-column: 1 / -1; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .tiles { grid-template-columns: repeat(2, 1fr); } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; min-width: 0; }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); letter-spacing: 0.01em; }
+  .card .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
+  .card .hint { color: var(--muted); font-size: 11.5px; font-weight: 400; }
+  .tbtn {
+    border: 1px solid var(--border); background: none; color: var(--muted); border-radius: 7px;
+    font: 11px system-ui; padding: 3px 8px; cursor: pointer;
+  }
+  .tbtn:hover { color: var(--ink-2); }
+  .scroll-x { overflow-x: auto; }
+  table.data { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  table.data th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 10px 6px 0; border-bottom: 1px solid var(--grid); }
+  table.data td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--grid); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  table.data td:first-child { color: var(--ink); font-variant-numeric: normal; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; flex: 1 1 44%; min-width: 180px; }
+  .chip .k { color: var(--muted); font-size: 11.5px; }
+  .chip .v { font-size: 15px; font-weight: 600; margin-top: 1px; }
+  .chip .s { color: var(--ink-2); font-size: 12px; }
+  .recap { position: relative; }
+  .recap pre {
+    font: 13px/1.7 system-ui, -apple-system, "Segoe UI", sans-serif; white-space: pre-wrap; color: var(--ink-2);
+    background: var(--page); border: 1px solid var(--grid); border-radius: 10px; padding: 14px 16px;
+  }
+  .recap pre b { color: var(--ink); }
+  .copy {
+    position: absolute; top: 10px; right: 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--ink-2); font: 11.5px system-ui; padding: 4px 10px; cursor: pointer;
+  }
+  .copy:hover { color: var(--ink); }
+  .legend { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 10.5px; }
+  .legend .cell { width: 10px; height: 10px; border-radius: 2px; }
+  .hm-title { font-size: 11.5px; color: var(--ink-2); display: flex; align-items: center; gap: 6px; margin: 10px 0 6px; }
+  .hm-title .key { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+  footer { margin-top: 26px; color: var(--muted); font-size: 11.5px; text-align: center; }
+  #tip {
+    position: fixed; pointer-events: none; z-index: 10; display: none; max-width: 280px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.13); padding: 8px 11px; font-size: 12px;
+  }
+  #tip .t { color: var(--muted); font-size: 11px; margin-bottom: 3px; }
+  #tip .row { display: flex; align-items: center; gap: 6px; }
+  #tip .row .key { width: 8px; height: 3px; border-radius: 2px; }
+  #tip .row .val { font-weight: 600; }
+  #tip .row .lbl { color: var(--ink-2); }
+  .empty { text-align: center; padding: 120px 20px; color: var(--muted); }
+  .empty code { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div id="tip"></div>
+<script>
+window.__VIBE__ = /*__DATA__*/null;
+(function () {
+  'use strict';
+  const D = window.__VIBE__;
+  const app = document.getElementById('app');
+  if (!D) {
+    app.innerHTML = '<div class="empty"><p style="font-size:17px;font-weight:600;margin-bottom:8px">nothing to see (yet)</p><p>Run <code>npx vibescope</code> — it reads your local Claude Code history and git repos<br>and serves this dashboard with your data. Nothing leaves your machine.</p></div>';
+    return;
+  }
+
+  // ---------- helpers ----------
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const el = (tag, attrs = {}, parent) => {
+    const ns = 'http://www.w3.org/2000/svg';
+    const n = ['svg', 'rect', 'path', 'text', 'line', 'g', 'circle'].includes(tag)
+      ? document.createElementNS(ns, tag)
+      : document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'text') n.textContent = v;
+      else if (k === 'html') n.innerHTML = v;
+      else n.setAttribute(k, v);
+    }
+    if (parent) parent.appendChild(n);
+    return n;
+  };
+  const fmt = (n) => {
+    if (n == null) return '–';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e4) return Math.round(n / 1e3) + 'K';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(Math.round(n));
+  };
+  const money = (n) => (n >= 100 ? '$' + Math.round(n).toLocaleString() : '$' + n.toFixed(2));
+  const niceDate = (iso) => new Date(iso + 'T12:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const modelName = (id) =>
+    String(id).replace(/^claude-/, '').replace(/-\d{8}$/, '').split('-')
+      .map((p, i, a) => (/^\d/.test(p) && i > 0 && /^\d/.test(a[i - 1] || '') ? p : p[0].toUpperCase() + p.slice(1)))
+      .join(' ').replace(/(\d) (\d)/g, '$1.$2');
+
+  // ---------- tooltip (textContent only — labels are untrusted) ----------
+  const tip = document.getElementById('tip');
+  function showTip(evt, title, rows) {
+    tip.textContent = '';
+    if (title) el('div', { class: 't', text: title }, tip);
+    for (const r of rows) {
+      const row = el('div', { class: 'row' }, tip);
+      if (r.color) el('span', { class: 'key' }, row).style.background = r.color;
+      el('span', { class: 'val', text: r.value }, row);
+      el('span', { class: 'lbl', text: r.label }, row);
+    }
+    tip.style.display = 'block';
+    moveTip(evt);
+  }
+  function moveTip(evt) {
+    const pad = 14;
+    let x = evt.clientX + pad, y = evt.clientY + pad;
+    const r = tip.getBoundingClientRect();
+    if (x + r.width > innerWidth - 8) x = evt.clientX - r.width - pad;
+    if (y + r.height > innerHeight - 8) y = evt.clientY - r.height - pad;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  }
+  const hideTip = () => (tip.style.display = 'none');
+  const hover = (node, fn) => {
+    node.addEventListener('pointerenter', (e) => fn(e));
+    node.addEventListener('pointermove', (e) => (fn(e), moveTip(e)));
+    node.addEventListener('pointerleave', hideTip);
+    node.addEventListener('focus', (e) => fn({ clientX: 40, clientY: 40 }));
+    node.addEventListener('blur', hideTip);
+  };
+
+  // ---------- card scaffolding with table-view twin ----------
+  function card(parent, title, hint, cls = '') {
+    const c = el('section', { class: 'card ' + cls }, parent);
+    const head = el('div', { class: 'head' }, c);
+    const h = el('h2', { text: title }, head);
+    if (hint) el('span', { class: 'hint', text: hint }, h);
+    const btn = el('button', { class: 'tbtn', text: 'table' }, head);
+    const chart = el('div', { class: 'chart-view' }, c);
+    const table = el('div', { class: 'scroll-x', style: 'display:none' }, c);
+    btn.addEventListener('click', () => {
+      const showTable = table.style.display === 'none';
+      table.style.display = showTable ? '' : 'none';
+      chart.style.display = showTable ? 'none' : '';
+      btn.textContent = showTable ? 'chart' : 'table';
+    });
+    return { chart, table };
+  }
+  function dataTable(parent, cols, rows) {
+    const t = el('table', { class: 'data' }, parent);
+    const tr = el('tr', {}, el('thead', {}, t));
+    for (const c of cols) el('th', { text: c }, tr);
+    const tb = el('tbody', {}, t);
+    for (const r of rows) {
+      const row = el('tr', {}, tb);
+      for (const v of r) el('td', { text: v == null ? '–' : String(v) }, row);
+    }
+  }
+
+  // ---------- layout ----------
+  function render() {
+    app.textContent = '';
+    const blue = css('--blue'), aqua = css('--aqua');
+
+    // header
+    const top = el('header', { class: 'top' }, app);
+    el('div', { class: 'logo', html: '<span class="dot">◉</span> vibescope <small>local-first dev observability</small>' }, top);
+    const first = D.daily.find((d) => d.prompts + d.commits > 0);
+    const span = first ? `${niceDate(first.date)} – ${niceDate(D.daily[D.daily.length - 1].date)}` : `last ${D.rangeDays} days`;
+    el('div', { class: 'meta', text: `${span} · ${(D.identity && D.identity[0]) || 'you'}` }, top);
+
+    if (D.sources && D.sources.cursor) {
+      el('div', { class: 'banner', text: 'Cursor detected on this machine — Cursor session parsing lands in v0.2. Showing Claude Code + git for now.' }, app);
+    }
+
+    // hero + tiles
+    const heroRow = el('div', { class: 'hero-row' }, app);
+    const hero = el('div', { class: 'hero' }, heroRow);
+    el('div', { class: 'label', text: 'Estimated AI spend' }, hero);
+    el('div', { class: 'value', text: money(D.totals.estCostUSD) }, hero);
+    const perDay = D.totals.activeDays ? D.totals.estCostUSD / D.totals.activeDays : 0;
+    el('div', { class: 'sub', text: `≈ ${money(perDay)} per active day · standard API rates` }, hero);
+
+    const tiles = el('div', { class: 'tiles' }, heroRow);
+    const tile = (label, value, sub) => {
+      const t = el('div', { class: 'tile' }, tiles);
+      el('div', { class: 'label', text: label }, t);
+      el('div', { class: 'value', text: value }, t);
+      if (sub) el('div', { class: 'sub', text: sub }, t);
+    };
+    tile('AI pair sessions', fmt(D.totals.sessions), `${fmt(D.totals.toolCalls)} tool calls`);
+    tile('Prompts you typed', fmt(D.totals.userMessages), `${fmt(D.totals.assistantMessages)} AI turns`);
+    tile('AI output', fmt(D.totals.outputTokens), 'tokens generated');
+    tile('Commits authored', fmt(D.totals.commits), `${D.projects.filter((p) => p.commits > 0).length} repos`);
+    tile('Active days', fmt(D.totals.activeDays), `best streak ${D.highlights.bestStreak}`);
+    tile('Cache leverage', cachePct() + '%', 'of input read from cache');
+
+    const grid = el('div', { class: 'grid' }, app);
+
+    // ---- activity heatmaps ----
+    {
+      const { chart, table } = card(grid, 'Daily rhythm', 'prompts and commits, per day', 'full');
+      heatmap(chart, 'Prompts to Claude', 'prompts', ['--heat-b1', '--heat-b2', '--heat-b3', '--heat-b4', '--heat-b5'], blue);
+      heatmap(chart, 'Commits authored', 'commits', ['--heat-a1', '--heat-a2', '--heat-a3', '--heat-a4', '--heat-a5'], aqua);
+      dataTable(table, ['Date', 'Prompts', 'AI turns', 'Commits', 'Est. cost'],
+        D.daily.filter((d) => d.prompts + d.commits + d.aiMsgs > 0).slice().reverse()
+          .map((d) => [d.date, d.prompts, d.aiMsgs, d.commits, money(d.cost)]));
+    }
+
+    // ---- projects ----
+    {
+      const { chart, table } = card(grid, 'Where the effort went', 'prompts per project');
+      const items = D.projects.filter((p) => p.prompts > 0).slice(0, 9);
+      hbars(chart, items.map((p) => ({ label: p.name, value: p.prompts, extra: p })), blue, (p) => [
+        { value: fmt(p.prompts), label: 'prompts', color: blue },
+        { value: fmt(p.sessions), label: 'sessions' },
+        { value: fmt(p.commits), label: 'commits' },
+        { value: money(p.cost), label: 'est. cost' },
+      ]);
+      dataTable(table, ['Project', 'Prompts', 'Sessions', 'Commits', 'Est. cost'],
+        D.projects.map((p) => [p.name, p.prompts, p.sessions, p.commits, money(p.cost)]));
+    }
+
+    // ---- models ----
+    {
+      const { chart, table } = card(grid, 'Models', 'estimated cost by model');
+      const items = D.models.slice(0, 6);
+      hbars(chart, items.map((m) => ({ label: modelName(m.model), value: m.cost, fmt: money, extra: m })), blue, (m) => [
+        { value: money(m.cost), label: 'est. cost', color: blue },
+        { value: fmt(m.outputTokens), label: 'output tokens' },
+        { value: fmt(m.inputTokens), label: 'input tokens' },
+        { value: fmt(m.cacheReadTokens), label: 'cache-read tokens' },
+      ]);
+      dataTable(table, ['Model', 'Est. cost', 'Output tok', 'Input tok', 'Cache-read tok', 'Turns'],
+        D.models.map((m) => [modelName(m.model), money(m.cost), fmt(m.outputTokens), fmt(m.inputTokens), fmt(m.cacheReadTokens), m.messages]));
+    }
+
+    // ---- rhythm ----
+    {
+      const { chart, table } = card(grid, 'When you vibe', 'prompts by hour and weekday');
+      columns(chart, D.hourly, (i) => `${i}:00`, blue, 150);
+      const wk = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      el('div', { style: 'height:12px' }, chart);
+      columns(chart, D.weekday, (i) => wk[i], blue, 90, true);
+      dataTable(table, ['Hour', 'Prompts'], D.hourly.map((v, i) => [`${i}:00`, v]));
+    }
+
+    // ---- highlights ----
+    {
+      const { chart, table } = card(grid, 'Highlights', 'from this window');
+      const chips = el('div', { class: 'chips' }, chart);
+      const chip = (k, v, s) => {
+        const c = el('div', { class: 'chip' }, chips);
+        el('div', { class: 'k', text: k }, c);
+        el('div', { class: 'v', text: v }, c);
+        if (s) el('div', { class: 's', text: s }, c);
+      };
+      const h = D.highlights;
+      if (h.busiestDay) chip('Busiest day', niceDate(h.busiestDay.date), `${h.busiestDay.prompts} prompts · ${h.busiestDay.commits} commits`);
+      if (h.longestSession) chip('Longest session', hrs(h.longestSession.durMs), `${h.longestSession.project} · ${niceDate(h.longestSession.date)}`);
+      chip('Night owl index', D.highlights.nightOwlPct + '%', 'prompts between 22:00–05:00');
+      if (h.topProject) chip('Top focus', h.topProject, 'most-prompted project');
+      dataTable(table, ['Highlight', 'Value'], [
+        ['Busiest day', h.busiestDay ? `${h.busiestDay.date} (${h.busiestDay.prompts} prompts, ${h.busiestDay.commits} commits)` : '–'],
+        ['Longest session', h.longestSession ? `${hrs(h.longestSession.durMs)} on ${h.longestSession.project}` : '–'],
+        ['Night owl', D.highlights.nightOwlPct + '%'],
+        ['Best streak', D.highlights.bestStreak + ' days'],
+      ]);
+    }
+
+    // ---- recap ----
+    {
+      const c = el('section', { class: 'card full recap' }, grid);
+      const head = el('div', { class: 'head' }, c);
+      el('h2', { text: 'Your week, drafted' }, head).appendChild(
+        Object.assign(document.createElement('span'), { className: 'hint', textContent: ' standup, without writing it' }));
+      const pre = el('pre', {}, c);
+      pre.textContent = D.recap.week;
+      const btn = el('button', { class: 'copy', text: 'copy' }, c);
+      btn.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(D.recap.week);
+        btn.textContent = 'copied ✓';
+        setTimeout(() => (btn.textContent = 'copy'), 1500);
+      });
+    }
+
+    // ---- recent sessions ----
+    {
+      const c = el('section', { class: 'card full' }, grid);
+      const head = el('div', { class: 'head' }, c);
+      el('h2', { text: 'Recent sessions' }, head);
+      const wrapT = el('div', { class: 'scroll-x' }, c);
+      dataTable(wrapT, ['Session', 'Project', 'Date', 'Prompts', 'Tool calls', 'Est. cost'],
+        D.recentSessions.map((s) => [s.title, s.project, s.date, s.prompts, s.toolCalls, money(s.cost)]));
+    }
+
+    el('footer', { text: 'vibescope v0.1 · everything stays on this machine · estimates use standard API rates · MIT' }, app);
+  }
+
+  const hrs = (ms) => (ms >= 3600000 ? (ms / 3600000).toFixed(1) + ' h' : Math.round(ms / 60000) + ' min');
+  function cachePct() {
+    const t = D.totals;
+    const denom = t.inputTokens + t.cacheReadTokens + t.cacheWriteTokens;
+    return denom ? Math.round((100 * t.cacheReadTokens) / denom) : 0;
+  }
+
+  // ---------- calendar heatmap (sequential ramp = magnitude) ----------
+  function heatmap(parent, title, key, rampVars, keyColor) {
+    const t = el('div', { class: 'hm-title' }, parent);
+    el('span', { class: 'key' }, t).style.background = keyColor;
+    t.appendChild(document.createTextNode(title));
+
+    const byDate = new Map(D.daily.map((d) => [d.date, d]));
+    const end = new Date(); end.setHours(12, 0, 0, 0);
+    const start = new Date(end.getTime() - (D.rangeDays - 1) * 86400000);
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7)); // back to Monday
+
+    const vals = D.daily.map((d) => d[key]).filter((v) => v > 0).sort((a, b) => a - b);
+    const q = (p) => (vals.length ? vals[Math.min(vals.length - 1, Math.floor(p * vals.length))] : 1);
+    const thresholds = [1, Math.max(2, q(0.5)), Math.max(3, q(0.75)), Math.max(4, q(0.92))];
+    const ramp = rampVars.map(css);
+    const zero = css('--heat-0');
+    const color = (v) => {
+      if (!v) return zero;
+      let i = 0;
+      while (i < thresholds.length - 1 && v >= thresholds[i + 1]) i++;
+      return ramp[v >= thresholds[3] ? 4 : v >= thresholds[2] ? 3 : v >= thresholds[1] ? 2 : 1] || ramp[1];
+    };
+
+    const cell = 13, gap = 3, step = cell + gap;
+    const days = Math.round((end - start) / 86400000) + 1;
+    const weeks = Math.ceil(days / 7);
+    const left = 26, topPad = 16;
+    const w = left + weeks * step, h = topPad + 7 * step;
+
+    const box = el('div', { class: 'scroll-x' }, parent);
+    const svg = el('svg', { width: w, height: h, viewBox: `0 0 ${w} ${h}`, role: 'img', 'aria-label': title }, box);
+
+    ['Mon', 'Wed', 'Fri'].forEach((d, i) => {
+      el('text', { x: 0, y: topPad + (i * 2) * step + cell - 3, fill: css('--muted'), 'font-size': 9.5, text: d }, svg);
+    });
+
+    let lastMonth = -1;
+    for (let i = 0; i < days; i++) {
+      const date = new Date(start.getTime() + i * 86400000);
+      const week = Math.floor(i / 7), row = (date.getDay() + 6) % 7;
+      const x = left + week * step, y = topPad + row * step;
+      if (row === 0 && date.getMonth() !== lastMonth) {
+        lastMonth = date.getMonth();
+        el('text', { x, y: 10, fill: css('--muted'), 'font-size': 9.5, text: date.toLocaleDateString('en-US', { month: 'short' }) }, svg);
+      }
+      if (date > end) continue;
+      const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const d = byDate.get(iso);
+      const v = d ? d[key] : 0;
+      const r = el('rect', { x, y, width: cell, height: cell, rx: 3, fill: color(v), tabindex: -1 }, svg);
+      hover(r, (e) => showTip(e, date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }), [
+        { value: String(d ? d.prompts : 0), label: 'prompts', color: css('--blue') },
+        { value: String(d ? d.commits : 0), label: 'commits', color: css('--aqua') },
+        { value: String(d ? d.aiMsgs : 0), label: 'AI turns' },
+        { value: money(d ? d.cost : 0), label: 'est. cost' },
+      ]));
+    }
+
+    const lg = el('div', { class: 'legend', style: `margin: 2px 0 2px ${left}px` }, parent);
+    lg.appendChild(document.createTextNode('less'));
+    [zero, ...ramp.slice(1)].forEach((c) => (el('span', { class: 'cell' }, lg).style.background = c));
+    lg.appendChild(document.createTextNode('more'));
+  }
+
+  // ---------- horizontal bars (≤24px thick, rounded data-end, value at tip) ----------
+  function hbars(parent, items, color, tipRows) {
+    if (!items.length) { el('div', { class: 'hint', text: 'no data in this window' }, parent); return; }
+    const barH = 18, rowH = 30, labelW = 150, valueW = 56;
+    const W = 460, chartW = W - labelW - valueW;
+    const max = Math.max(...items.map((i) => i.value));
+    const box = el('div', { class: 'scroll-x' }, parent);
+    const svg = el('svg', { width: '100%', height: items.length * rowH, viewBox: `0 0 ${W} ${items.length * rowH}`, preserveAspectRatio: 'xMinYMin meet' }, box);
+    items.forEach((it, i) => {
+      const y = i * rowH + (rowH - barH) / 2;
+      const w = Math.max(2, (it.value / max) * chartW);
+      el('text', { x: labelW - 10, y: y + barH / 2 + 4, 'text-anchor': 'end', fill: css('--ink'), 'font-size': 12, text: truncate(it.label, 20) }, svg);
+      const rr = Math.min(4, w / 2);
+      const bar = el('path', {
+        d: `M${labelW},${y} h${w - rr} q${rr},0 ${rr},${rr} v${barH - 2 * rr} q0,${rr} -${rr},${rr} h-${w - rr} z`,
+        fill: color,
+      }, svg);
+      el('text', { x: labelW + w + 8, y: y + barH / 2 + 4, fill: css('--ink-2'), 'font-size': 11.5, text: (it.fmt || fmt)(it.value) }, svg);
+      const hit = el('rect', { x: 0, y: i * rowH, width: W, height: rowH, fill: 'transparent' }, svg);
+      hover(hit, (e) => showTip(e, it.label, tipRows(it.extra)));
+    });
+  }
+
+  // ---------- columns (hourly / weekday) ----------
+  function columns(parent, values, labelFor, color, height, labelAll = false) {
+    const n = values.length;
+    const W = 460, pad = 4, bw = Math.min(24, (W - 30) / n - 3);
+    const H = height, base = H - 16;
+    const max = Math.max(1, ...values);
+    const peak = values.indexOf(Math.max(...values));
+    const svg = el('svg', { width: '100%', height: H, viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMinYMin meet' }, parent);
+    el('line', { x1: 26, y1: base + 0.5, x2: W, y2: base + 0.5, stroke: css('--baseline'), 'stroke-width': 1 }, svg);
+    const gy = base - (base - 12) * 0.5;
+    el('line', { x1: 26, y1: gy, x2: W, y2: gy, stroke: css('--grid'), 'stroke-width': 1 }, svg);
+    el('text', { x: 22, y: gy + 3, 'text-anchor': 'end', fill: css('--muted'), 'font-size': 9, text: fmt(max / 2) }, svg);
+    const slot = (W - 30) / n;
+    values.forEach((v, i) => {
+      const h = Math.round(((base - 12) * v) / max);
+      const x = 30 + i * slot + (slot - bw) / 2;
+      const y = base - h;
+      const rr = Math.min(4, bw / 2, h);
+      if (h > 0)
+        el('path', { d: `M${x},${base} v-${h - rr} q0,-${rr} ${rr},-${rr} h${bw - 2 * rr} q${rr},0 ${rr},${rr} v${h - rr} z`, fill: color }, svg);
+      if (labelAll || i % 4 === 0)
+        el('text', { x: x + bw / 2, y: H - 3, 'text-anchor': 'middle', fill: css('--muted'), 'font-size': 9, text: labelFor(i) }, svg);
+      if (i === peak && v > 0)
+        el('text', { x: x + bw / 2, y: y - 4, 'text-anchor': 'middle', fill: css('--ink-2'), 'font-size': 10, 'font-weight': 600, text: fmt(v) }, svg);
+      const hit = el('rect', { x: 30 + i * slot, y: 8, width: slot, height: base - 8, fill: 'transparent' }, svg);
+      hover(hit, (e) => showTip(e, labelFor(i), [{ value: String(v), label: 'prompts', color }]));
+    });
+  }
+
+  const truncate = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+
+  render();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+})();
+</script>
+</body>
+</html>
