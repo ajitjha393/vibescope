@@ -1,6 +1,6 @@
 {
   "name": "vibescope",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Local-first observability for the vibe-coding era. Agent-agnostic: see what you and your coding agents (Claude Code, Cursor, Codex, Gemini, Aider) actually did — sessions, tokens, cost, tools, pair time — plus an auto-drafted standup recap. Zero setup: it reads what's already on your machine.",
   "type": "module",
   "repository": {
